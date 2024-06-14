@@ -118,8 +118,21 @@ class Log(Function):
 
 class Exp(Function):
     def forward(self, x: LazyBuffer) -> LazyBuffer:
-        self.ret = x.e(BinaryOps.MUL, x.const(1 / math.log(2))).e(UnaryOps.EXP2)
-        return self.ret
+        self.x = x
+        result = x.const(1)
+        term = x.const(1)
+
+        # Number of terms in the Taylor series
+        N = 20
+
+        for n in range(1, N):
+            term = term.e(BinaryOps.MUL, x)
+            reciprocal_factorial = x.const(1.0 / math.factorial(n))
+            current_term = term.e(BinaryOps.MUL, reciprocal_factorial)
+            result = result.e(BinaryOps.ADD, current_term)
+
+        self.ret = result
+        return result
 
     def backward(self, grad_output: LazyBuffer) -> LazyBuffer:
         return self.ret.e(BinaryOps.MUL, grad_output)
